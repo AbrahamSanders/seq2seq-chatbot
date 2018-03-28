@@ -1,0 +1,4 @@
+embeddings {
+  tensor_name: "model/encoder/shared_embeddings_matrix"
+  metadata_path: "C:\\Source\\Repos\\seq2seq-chatbot\\models\\cornell_movie_dialog\\trained_model_v1\\shared_vocab.tsv"
+}

@@ -1,0 +1,2 @@
+model_checkpoint_path: "C:\\Source\\Repos\\seq2seq-chatbot\\models\\cornell_movie_dialog\\trained_model_v1\\best_weights_training.ckpt"
+all_model_checkpoint_paths: "C:\\Source\\Repos\\seq2seq-chatbot\\models\\cornell_movie_dialog\\trained_model_v1\\best_weights_training.ckpt"

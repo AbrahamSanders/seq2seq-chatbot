@@ -1,0 +1,51 @@
+{
+    "py/object": "hparams.Hparams",
+    "model_hparams" : {
+        "py/object": "hparams.ModelHparams",
+        "rnn_cell_type": "lstm",
+        "rnn_size": 1024,
+        "use_bidirectional_encoder": false,
+        "encoder_num_layers": 4,
+        "decoder_num_layers": 4,
+        "encoder_embedding_size": 256,
+        "decoder_embedding_size": 256,
+        "share_embedding": true,
+        "attention_type": "scaled_luong",
+        "beam_width": 10,
+        "enable_sampling": false,
+        "max_gradient_norm": 5.0,
+        "gpu_dynamic_memory_growth": true
+    },
+    "training_hparams": {
+        "py/object": "hparams.TrainingHparams",
+        "min_question_words": 1,
+        "max_question_answer_words": 30,
+        "max_conversations": -1,
+        "conv_history_length": 6,
+        "input_vocab_threshold": 2,
+        "output_vocab_threshold": 2,
+        "validation_set_percent": 10.0,
+        "random_train_val_split": true,
+        "validation_metric": "loss",
+        "epochs": 500,
+        "early_stopping_epochs": 500,
+        "batch_size": 128,
+        "learning_rate": 2.0,
+        "learning_rate_decay": 0.99,
+        "min_learning_rate": 0.1,
+        "dropout": 0.2,
+        "checkpoint_on_training": true,
+        "checkpoint_on_validation": true,
+        "log_summary": true,
+        "stats_after_n_batches": 100
+    },
+    "inference_hparams": {
+        "py/object": "hparams.InferenceHparams",
+        "beam_length_penalty_weight": 1.25,
+        "sampling_temperature": 0.5,
+        "max_answer_words": 100,
+        "conv_history_length": 6,
+        "log_summary": true,
+        "log_chat": true
+    }
+}
