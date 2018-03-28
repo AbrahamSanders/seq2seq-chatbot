@@ -32,7 +32,7 @@ class DatasetGenerator(object):
         pass
     
     def generate_dataset(self, dataset_dir, model_dir, training_hparams, share_vocab = True):
-        """Read and generate a chatbot dataset based on the Cornell movie dialog dataset
+        """Read and generate a chatbot dataset based on the specified dataset
         
         Args:
           dataset_dir: directory to load the raw dataset file(s) from
