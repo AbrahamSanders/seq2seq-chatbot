@@ -11,19 +11,22 @@ To chat with a trained model from a python console:
 run chat.py dataset_name\model_name\checkpoint.ckpt
 ```
 
-**Note:** The path *dataset_name\model_name\checkpoint.ckpt* is relative to the */models* directory. So the full path to the model checkpoint would be : *$Repo\seq2seq-chatbot\models\dataset_name\model_name\checkpoint.ckpt*
+**Note:** The path *dataset_name\model_name\checkpoint.ckpt* is relative to the *\seq2seq-chatbot\models* directory. So the full path to the model checkpoint would be : *$Repo\seq2seq-chatbot\models\dataset_name\model_name\checkpoint.ckpt*
 
 For example, to chat with the trained cornell movie dialog model:
 
-1. Unzip the cornell movie dialog dataset (cornell_movie_dialog.zip) into the [/datasets/cornell_movie_dialog](https://github.com/AbrahamSanders/seq2seq-chatbot/tree/master/seq2seq-chatbot/datasets/cornell_movie_dialog) folder
+1. Unzip the cornell movie dialog dataset (cornell_movie_dialog.zip) into the [/seq2seq-chatbot/datasets/cornell_movie_dialog](/seq2seq-chatbot/datasets/cornell_movie_dialog) folder
 
-2. Download and unzip [trained_model_v1](https://github.com/AbrahamSanders/seq2seq-chatbot/blob/master/seq2seq-chatbot/models/cornell_movie_dialog/README.md) into the [/models/cornell_movie_dialog](https://github.com/AbrahamSanders/seq2seq-chatbot/tree/master/seq2seq-chatbot/models/cornell_movie_dialog) folder
+2. Download and unzip [trained_model_v1](/seq2seq-chatbot/models/cornell_movie_dialog/README.md) into the [/seq2seq-chatbot/models/cornell_movie_dialog](/seq2seq-chatbot/models/cornell_movie_dialog) folder
 
 3. Run:
 ```shell
 run chat.py cornell_movie_dialog\trained_model_v1\best_weights_training.ckpt
 ```
 
+The result should look like this:
+
+![chat](/doc_files/chat.png "chat")
 
 ## Training a model
 Instructions coming soon...
