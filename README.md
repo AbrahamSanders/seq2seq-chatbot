@@ -8,7 +8,7 @@ To chat with a trained model from a python console:
 
 2. Run chat.py with the model checkpoint path:
 ```shell
-chat.py dataset_name\model_name\checkpoint.ckpt
+run chat.py dataset_name\model_name\checkpoint.ckpt
 ```
 
 **Note:** The path *dataset_name\model_name\checkpoint.ckpt* is relative to the */models* directory. So the full path to the model checkpoint would be : *$Repo\seq2seq-chatbot\models\dataset_name\model_name\checkpoint.ckpt*
@@ -21,7 +21,7 @@ For example, to chat with the trained cornell movie dialog model:
 
 3. Run:
 ```shell
-chat.py cornell_movie_dialog\trained_model_v1\best_weights_training.ckpt
+run chat.py cornell_movie_dialog\trained_model_v1\best_weights_training.ckpt
 ```
 
 
