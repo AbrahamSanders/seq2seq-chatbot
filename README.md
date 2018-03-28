@@ -21,7 +21,7 @@ For example, to chat with the trained cornell movie dialog model:
 
 3. Run:
 ```shell
-chat.py cornell-movie-dialog\trained_model_v1\best_weights_training.ckpt
+chat.py cornell_movie_dialog\trained_model_v1\best_weights_training.ckpt
 ```
 
 
