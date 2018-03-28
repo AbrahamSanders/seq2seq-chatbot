@@ -4,7 +4,7 @@ A sequence2sequence chatbot implementation with TensorFlow.
 ## Chatting with a trained model
 To chat with a trained model from a python console:
 
-1. Set console working directory to the seq2seq-chatbot directory. This directory should have the **/models** and **/datasets** directories directly within it.
+1. Set console working directory to the **/seq2seq-chatbot** directory. This directory should have the **/models** and **/datasets** directories directly within it.
 
 2. Run chat.py with the model checkpoint path:
 ```shell
