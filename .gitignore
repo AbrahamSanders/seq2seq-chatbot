@@ -289,3 +289,4 @@ __pycache__/
 /seq2seq-chatbot/models/cornell_movie_dialog/trained_model_v1
 .vscode/settings.json
 .vscode/launch.json
+/seq2seq-chatbot/models/cornell_movie_dialog/20180329_030159
