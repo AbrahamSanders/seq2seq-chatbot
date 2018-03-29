@@ -96,9 +96,9 @@ class Dataset(object):
         """Sorts the dataset by the lengths of the questions. This can speed up training by reducing the
         amount of padding the input sequences need.
         """
-
-        self.questions_into_int, self.answers_into_int = zip(*sorted(zip(self.questions_into_int, self.answers_into_int), 
-                                                                     key = lambda qa_pair: len(qa_pair[0])))
+        if self.size() > 0:
+            self.questions_into_int, self.answers_into_int = zip(*sorted(zip(self.questions_into_int, self.answers_into_int), 
+                                                                         key = lambda qa_pair: len(qa_pair[0])))
     
     def batches(self, batch_size):
         """Provide the dataset as an enumerable collection of batches of size batch_size.
