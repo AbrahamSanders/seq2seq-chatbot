@@ -4,29 +4,27 @@ A sequence2sequence chatbot implementation with TensorFlow.
 ## Chatting with a trained model
 To chat with a trained model from a python console:
 
-1. Set console working directory to the **/seq2seq-chatbot** directory. This directory should have the **/models** and **/datasets** directories directly within it.
+1. Set console working directory to the **seq2seq-chatbot** directory. This directory should have the **models** and **datasets** directories directly within it.
 
 2. Run chat.py with the model checkpoint path:
 ```shell
-run chat.py dataset_name\model_name\checkpoint.ckpt
+run chat.py models\dataset_name\model_name\checkpoint.ckpt
 ```
-
-**Note:** The path **dataset_name\model_name\checkpoint.ckpt** is relative to the **\seq2seq-chatbot\models** directory. So the full path to the model checkpoint would be : **$Repo\seq2seq-chatbot\models\dataset_name\model_name\checkpoint.ckpt**
 
 For example, to chat with the trained cornell movie dialog model:
 
-1. Download and unzip [trained_model_v1](/seq2seq-chatbot/models/cornell_movie_dialog/README.md) into the [/seq2seq-chatbot/models/cornell_movie_dialog](/seq2seq-chatbot/models/cornell_movie_dialog) folder
+1. Download and unzip [trained_model_v1](seq2seq-chatbot/models/cornell_movie_dialog/README.md) into the [seq2seq-chatbot/models/cornell_movie_dialog](seq2seq-chatbot/models/cornell_movie_dialog) folder
 
-2. Set console working directory to the **/seq2seq-chatbot** directory
+2. Set console working directory to the **seq2seq-chatbot** directory
 
 3. Run:
 ```shell
-run chat.py cornell_movie_dialog\trained_model_v1\best_weights_training.ckpt
+run chat.py models\cornell_movie_dialog\trained_model_v1\best_weights_training.ckpt
 ```
 
 The result should look like this:
 
-![chat](/doc_files/chat.png "chat")
+![chat](doc_files/chat.png "chat")
 
 ## Training a model
 Instructions coming soon...
@@ -50,10 +48,19 @@ Instructions coming soon...
 The following python packages are used in seq2seq-chatbot:
 (excluding packages that come with Anaconda)
 
-- [TensorFlow](https://www.tensorflow.org/) 
-  - **[pip install --upgrade tensorflow]** or **[pip install --upgrade tensorflow-gpu]**
+- [TensorFlow](https://www.tensorflow.org/)
+    ```shell
+    pip install --upgrade tensorflow
+    ```
+    For GPU support: [(See here for full GPU install instructions including CUDA and cuDNN)](https://www.tensorflow.org/install/)
+    ```shell
+    pip install --upgrade tensorflow-gpu
+    ```
+
 - [jsonpickle](https://jsonpickle.github.io/)
-  - **[pip install --upgrade jsonpickle]**
+    ```shell
+    pip install --upgrade jsonpickle
+    ```
   
 ## Acknowledgements
 This implementation was inspired by:

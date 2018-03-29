@@ -18,50 +18,47 @@ def initialize_session(mode):
     parser = argparse.ArgumentParser("Train a chatbot model" if mode == "train" else "Chat with a trained chatbot model")
     if mode == "train":
         ex_group = parser.add_mutually_exclusive_group(required=True)
-        ex_group.add_argument("--datasetname", "-d", help="Subdirectory name within /datasets which contains the dataset. A new model will be trained using the dataset.")
-        ex_group.add_argument("--checkpointfile", "-c", help="Path within /models structured as 'dataset_name/model_dir/checkpoint_name.ckpt'. Training will resume from the selected checkpoint. The checkpoint file should exist along with the hparams.json file.")
+        ex_group.add_argument("--datasetdir", "-d", help="Path structured as datasets/dataset_name. A new model will be trained using the dataset contained in this directory.")
+        ex_group.add_argument("--checkpointfile", "-c", help="Path structured as 'models/dataset_name/model_name/checkpoint_name.ckpt'. Training will resume from the selected checkpoint. The hparams.json file should exist in the same directory as the checkpoint.")
     elif mode == "chat":
-        parser.add_argument("checkpointfile", help="Path within /models structured as 'dataset_name/model_dir/checkpoint_name.ckpt'. The checkpoint file should exist along with the hparams.json file and the vocabulary file(s).")
+        parser.add_argument("checkpointfile", help="Path structured as 'models/dataset_name/model_name/checkpoint_name.ckpt'. The hparams.json file and the vocabulary file(s) should exist in the same directory as the checkpoint.")
     else:
         raise ValueError("Unsupported session mode. Choose 'train' or 'chat'.")
     args = parser.parse_args()
     
-    models_dir = os.path.join(os.getcwd(), "models")
-    datasets_dir = os.path.join(os.getcwd(), "datasets")
-
     #Make sure script was run in the correct working directory
+    models_dir = "models"
+    datasets_dir = "datasets"
     if not os.path.isdir(models_dir) or not os.path.isdir(datasets_dir):
-        raise NotADirectoryError("Cannot find models directory '/models' and datasets directory '/datasets' within working directory {0}. Make sure to set the working directory to the root Chatbot folder."
+        raise NotADirectoryError("Cannot find models directory 'models' and datasets directory 'datasets' within working directory '{0}'. Make sure to set the working directory to the chatbot root folder."
                                     .format(os.getcwd()))
 
-    if mode == "train" and args.datasetname:
-        dataset_name = args.datasetname
-        model_dir = os.path.join(models_dir, dataset_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
+    if mode == "train" and args.datasetdir:
+        #Make sure dataset exists
+        dataset_dir = os.path.relpath(args.datasetdir)
+        if not os.path.isdir(dataset_dir):
+            raise NotADirectoryError("Cannot find dataset directory '{0}'".format(os.path.realpath(dataset_dir)))
+        #Create the new model directory
+        dataset_name = os.path.basename(dataset_dir)
+        model_dir = os.path.join("models", dataset_name, datetime.datetime.now().strftime("%Y%m%d_%H%M%S"))
         os.makedirs(model_dir, exist_ok=True)
-        copyfile(os.path.join(os.getcwd(), "hparams.json"), os.path.join(model_dir, "hparams.json"))
+        copyfile("hparams.json", os.path.join(model_dir, "hparams.json"))
         checkpoint = None
     elif args.checkpointfile:
-        checkpoint = os.path.basename(args.checkpointfile)
-        model_dir = os.path.dirname(args.checkpointfile)
-        dataset_name = os.path.dirname(model_dir)
-        if model_dir == "" or dataset_name == "":
-            raise ValueError("--checkpointfile must specify a path within /models structured as 'dataset_name/model_dir/checkpoint_name.ckpt'.")
-        model_dir = os.path.join(models_dir, model_dir)
-        
         #Make sure checkpoint file & hparams file exists
-        checkpoint_filepath = os.path.join(model_dir, checkpoint)
-        checkpoint_hparams_filepath = os.path.join(model_dir, "hparams.json")
+        checkpoint_filepath = os.path.relpath(args.checkpointfile)
         if not os.path.isfile(checkpoint_filepath + ".meta"):
-            raise FileNotFoundError("The checkpoint file '{0}' was not found.".format(checkpoint_filepath))
-        if not os.path.isfile(checkpoint_hparams_filepath):
-            raise FileNotFoundError("The hparams file '{0}' was not found. Make sure the checkpoint and hparams files are in the same directory"
-                                    .format(checkpoint_hparams_filepath))
+            raise FileNotFoundError("The checkpoint file '{0}' was not found.".format(os.path.realpath(checkpoint_filepath)))
+        #Get the checkpoint model directory
+        checkpoint = os.path.basename(checkpoint_filepath)
+        model_dir = os.path.dirname(checkpoint_filepath)
+        dataset_name = os.path.basename(os.path.dirname(model_dir))
+        dataset_dir = os.path.join(datasets_dir, dataset_name)
     else:
         raise ValueError("Invalid arguments. Use --help for proper usage.")
 
     #Load the hparams from file
     hparams_filepath = os.path.join(model_dir, "hparams.json")
     hparams = Hparams.load(hparams_filepath)
-    dataset_dir = os.path.join(datasets_dir, dataset_name)
 
     return dataset_dir, model_dir, hparams, checkpoint

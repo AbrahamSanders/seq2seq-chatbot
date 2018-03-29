@@ -6,7 +6,7 @@ import math
 from os import path
 
 import general_utils
-import dataset_generator_factory
+import dataset_reader_factory
 from chatbot_model import ChatbotModel
 from training_stats import TrainingStats
 
@@ -14,15 +14,15 @@ from training_stats import TrainingStats
 dataset_dir, model_dir, hparams, resume_checkpoint = general_utils.initialize_session("train")
 training_stats_filepath = path.join(model_dir, "training_stats.json")
 
-#Generate the chatbot dataset from the raw data files
-dataset_generator = dataset_generator_factory.get_dataset_generator(dataset_dir)
+#Read the chatbot dataset
+dataset_reader = dataset_reader_factory.get_dataset_reader(dataset_dir)
 
 print()
-print ("Generating dataset '{0}'...".format(dataset_generator.dataset_name))
-dataset = dataset_generator.generate_dataset(dataset_dir = dataset_dir, 
-                                             model_dir = model_dir, 
-                                             training_hparams = hparams.training_hparams, 
-                                             share_vocab = hparams.model_hparams.share_embedding)        
+print ("Reading dataset '{0}'...".format(dataset_reader.dataset_name))
+dataset = dataset_reader.read_dataset(dataset_dir = dataset_dir, 
+                                      model_dir = model_dir, 
+                                      training_hparams = hparams.training_hparams, 
+                                      share_vocab = hparams.model_hparams.share_embedding)        
 
 #Split the chatbot dataset into training & validation datasets        
 print ("Splitting {0} samples into training & validation sets ({1}% used for validation)..."
@@ -56,12 +56,9 @@ with ChatbotModel(mode = "train",
         print ("Resuming training from checkpoint {0}...".format(resume_checkpoint))
         model.load(resume_checkpoint)
         training_stats.load(training_stats_filepath)
-        
-    #Training settings
-    best_train_checkpoint = "best_weights_training.ckpt"
-    best_val_checkpoint = "best_weights_validation.ckpt"
-    
-    print ("Initializing training...")
+    else:
+        print ("Initializing training...")
+
     if hparams.model_hparams.share_embedding:
         print ("Shared Vocab size: {0}".format(dataset.input_vocabulary.size()))
     else:
@@ -70,6 +67,9 @@ with ChatbotModel(mode = "train",
     print ("Epochs: {0}".format(hparams.training_hparams.epochs))
     print ("Batch Size: {0}".format(hparams.training_hparams.batch_size))
     
+    best_train_checkpoint = "best_weights_training.ckpt"
+    best_val_checkpoint = "best_weights_validation.ckpt"
+
     #Train on all batches in epoch
     for epoch in range(1, hparams.training_hparams.epochs + 1):
         batch_counter = 0

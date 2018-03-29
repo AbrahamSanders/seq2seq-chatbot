@@ -133,14 +133,14 @@ class ChatbotModel(object):
         if self.model_hparams.share_embedding:
             shared_embedding = config.embeddings.add()
             shared_embedding.tensor_name = "model/encoder/shared_embeddings_matrix"
-            shared_embedding.metadata_path = path.join(self.model_dir, Vocabulary.SHARED_VOCAB_FILENAME)
+            shared_embedding.metadata_path = Vocabulary.SHARED_VOCAB_FILENAME
         else:
             encoder_embedding = config.embeddings.add()
             encoder_embedding.tensor_name = "model/encoder/encoder_embeddings_matrix"
-            encoder_embedding.metadata_path = path.join(self.model_dir, Vocabulary.INPUT_VOCAB_FILENAME)
+            encoder_embedding.metadata_path = Vocabulary.INPUT_VOCAB_FILENAME
             decoder_embedding = config.embeddings.add()
             decoder_embedding.tensor_name = "model/decoder/decoder_embeddings_matrix"
-            decoder_embedding.metadata_path = path.join(self.model_dir, Vocabulary.OUTPUT_VOCAB_FILENAME)
+            decoder_embedding.metadata_path = Vocabulary.OUTPUT_VOCAB_FILENAME
         
         projector.visualize_embeddings(self.summary_writer, config)
     
