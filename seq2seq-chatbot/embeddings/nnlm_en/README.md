@@ -8,7 +8,7 @@ Source*: [https://www.tensorflow.org/hub/modules/google/nnlm-en-dim128/1](https:
 
 Paper: [http://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf](http://www.jmlr.org/papers/volume3/bengio03a/bengio03a.pdf)
 
-Download: [here](https://drive.google.com/file/d/1ly5q6QmbFcZ9Mu2TZRakWe4oo6mXZ5pT/view?usp=sharing)
+Download: [here](https://drive.google.com/uc?id=1ly5q6QmbFcZ9Mu2TZRakWe4oo6mXZ5pT&export=download)
 
 After download, unzip all files in the archive into this directory.
 

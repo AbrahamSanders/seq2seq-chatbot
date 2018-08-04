@@ -8,7 +8,7 @@ Source*: [https://www.tensorflow.org/hub/modules/google/Wiki-words-250/1](https:
 
 Paper: [https://arxiv.org/abs/1301.3781](https://arxiv.org/abs/1301.3781)
 
-Download: [here](https://drive.google.com/file/d/1pV3LglHWn5wAmoCmt7u94hVHq8hLHXmj/view?usp=sharing)
+Download: [here](https://drive.google.com/uc?id=1pV3LglHWn5wAmoCmt7u94hVHq8hLHXmj&export=download)
 
 After download, unzip all files in the archive into this directory.
 
