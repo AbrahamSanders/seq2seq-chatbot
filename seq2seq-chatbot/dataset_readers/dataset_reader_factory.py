@@ -2,7 +2,7 @@
 Dataset reader implementation factory
 """
 from os import path
-from cornell_reader import CornellReader
+from dataset_readers.cornell_dataset_reader import CornellDatasetReader
 
 def get_dataset_reader(dataset_dir):
     """Gets the appropriate reader implementation for the specified dataset name.
@@ -13,7 +13,7 @@ def get_dataset_reader(dataset_dir):
     dataset_name = path.basename(dataset_dir)
 
     #When adding support for new datasets, add an instance of their reader class to the reader array below.
-    readers = [CornellReader()]
+    readers = [CornellDatasetReader()]
 
     for reader in readers:
         if reader.dataset_name == dataset_name:

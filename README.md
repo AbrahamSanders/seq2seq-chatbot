@@ -2,7 +2,19 @@
 A sequence2sequence chatbot implementation with TensorFlow.
 
 ## Chatting with a trained model
-To chat with a trained model from a python console:
+### To chat with a trained model from the model directory:
+
+(Batch files are only available for windows as of now. For mac and linux users see instructions below for python console.)
+
+For console chat: 
+1. Run `chat_console_best_weights_training.bat` or `chat_console_best_weights_validation.bat`
+
+For web chat:
+1. Run `chat_web_best_weights_training.bat` or `chat_web_best_weights_validation.bat`
+
+2. Open a browser to the URL indicated by the server console, followed by `/chat_ui.html`. This is typically: [http://localhost:8080/chat_ui.html](http://localhost:8080/chat_ui.html)
+
+### To chat with a trained model from a python console:
 
 1. Set console working directory to the **seq2seq-chatbot** directory. This directory should have the **models** and **datasets** directories directly within it.
 
@@ -11,15 +23,15 @@ To chat with a trained model from a python console:
 run chat.py models\dataset_name\model_name\checkpoint.ckpt
 ```
 
-For example, to chat with the trained cornell movie dialog model **trained_model_v1**:
+For example, to chat with the trained cornell movie dialog model **trained_model_v2**:
 
-1. Download and unzip [trained_model_v1](seq2seq-chatbot/models/cornell_movie_dialog/README.md) into the [seq2seq-chatbot/models/cornell_movie_dialog](seq2seq-chatbot/models/cornell_movie_dialog) folder
+1. Download and unzip [trained_model_v2](seq2seq-chatbot/models/cornell_movie_dialog/README.md) into the [seq2seq-chatbot/models/cornell_movie_dialog](seq2seq-chatbot/models/cornell_movie_dialog) folder
 
 2. Set console working directory to the **seq2seq-chatbot** directory
 
 3. Run:
 ```shell
-run chat.py models\cornell_movie_dialog\trained_model_v1\best_weights_training.ckpt
+run chat.py models\cornell_movie_dialog\trained_model_v2\best_weights_training.ckpt
 ```
 
 The result should look like this:
@@ -56,6 +68,9 @@ The result should look like this:
 
 ![train](doc_files/train.png "train")
 
+### Transfer learning with pre-trained embeddings:
+Docs coming soon...
+
 ## Visualizing a model in TensorBoard
 [TensorBoard](https://www.tensorflow.org/programmers_guide/summaries_and_tensorboard) is a great tool for visualizing what is going on under the hood when a TensorFlow model is being trained.
 
@@ -64,16 +79,16 @@ To start TensorBoard from a terminal:
 tensorboard --logdir=model_dir
 ```
 
-Where model_dir is the path to the directory where the model checkpoint file is. For example, to view the trained cornell movie dialog model **trained_model_v1**:
+Where model_dir is the path to the directory where the model checkpoint file is. For example, to view the trained cornell movie dialog model **trained_model_v2**:
 ```shell
-tensorboard --logdir=models\cornell_movie_dialog\trained_model_v1
+tensorboard --logdir=models\cornell_movie_dialog\trained_model_v2
 ```
 
 ### Visualize Training
-Coming soon...
+Docs coming soon...
 
 ### Visualize model graph
-Coming soon...
+Docs coming soon...
 
 ### Visualize word embeddings
 TensorBoard can project the word embeddings into 3D space by performing a dimensionality reduction technique like PCA or T-SNE, and can allow you to explore how your model has grouped together the words in your vocabulary by viewing nearest neighbors in the embedding space for any word.
@@ -103,11 +118,14 @@ The following python packages are used in seq2seq-chatbot:
     pip install --upgrade jsonpickle
     ```
 
+- [flask 0.12.4](http://flask.pocoo.org/) and [flask-restful](https://flask-restful.readthedocs.io/en/latest/) (required to run the web interface)
+    ```shell
+    pip install flask==0.12.4
+    pip install --upgrade flask-restful
+    ```
+
 ## Roadmap
-- Train a chatbot model using pre-trained word embeddings such as word2vec or GloVe.
-- Extend the model with a binary classifier that can predict when a change in topic is occurring during a conversation. This would allow the chatbot to throttle use of dialog context (prepended conversation history) more intelligently.
-- Implement an online learning mechanism and persistent storage so the bot can update its training dataset and incorporate newly learned facts on the fly.
-- Create an Alexa skill for the bot :-)
+See the [Roadmap Page](doc_files/roadmap.md)
   
 ## Acknowledgements
 This implementation was inspired by:
@@ -115,3 +133,11 @@ This implementation was inspired by:
 - TensorFlow's [Neural Machine Translation (seq2seq) Tutorial](https://www.tensorflow.org/tutorials/seq2seq)
   - [TF NMT GitHub](https://github.com/tensorflow/nmt)
   
+## Relevant papers
+1. [Sequence to Sequence Learning with Neural Networks](https://arxiv.org/abs/1409.3215)
+
+2. [A Neural Conversational Model](https://arxiv.org/abs/1506.05869)
+
+3. [Neural Machine Translation by Jointly Learning to Align and Translate](https://arxiv.org/abs/1409.0473) (Bahdanau attention mechanism)
+
+4. [Effective Approaches to Attention-based Neural Machine Translation](https://arxiv.org/abs/1508.04025) (Luong attention mechanism)

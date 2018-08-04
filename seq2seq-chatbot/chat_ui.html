@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+    <head>
+        <title>ChatBot</title>
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="form-group">
+                <label for="txtConvHistory">Conversation:</label>
+                <textarea id="txtConvHistory" class="form-control" rows="10"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="txtQuestion">Say:</label>
+                <div class="form-check form-check-inline float-right">
+                    <input type="checkbox" id="chkUseSpeechSyn" class="form-check-input" checked="checked" />
+                    <label for="chkUseSpeechSyn" class="form-check-label">Text-to-Speech</label>
+                </div>
+                <div class="form-check form-check-inline float-right">
+                    <input type="checkbox" id="chkUseSpeechRec" class="form-check-input" />
+                    <label for="chkUseSpeechRec" class="form-check-label">Speech-to-Text</label>
+                </div>
+                
+                <input type="text" id="txtQuestion" class="form-control pad" />
+                <button class="btn btn-primary btn-sm btn-block mt-2" id="btnSay">Say</button>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            function say(){
+                var question = $("#txtQuestion").val();
+
+                $.ajax({
+					url: "../chat/" + question,
+                    type: "GET",
+                    success: function(result) {
+                        result = processAnswer(result)
+                        var txtConvHistory = $("#txtConvHistory");
+                        var convHistory = txtConvHistory.val();
+                        convHistory = convHistory + "You: " + question;
+                        convHistory = convHistory + "\n";
+                        convHistory = convHistory + "ChatBot: " + result;
+                        convHistory = convHistory + "\n\n";
+                        txtConvHistory.val(convHistory);
+                        txtConvHistory.scrollTop(txtConvHistory[0].scrollHeight);
+
+                        $("#txtQuestion").val("");
+                        
+                        var speechSyn = $("#chkUseSpeechSyn").is(":checked");
+                        if (speechSyn) {
+                            speak(result);
+                        }
+                    },
+                    error: function(xhr, status, error){
+                        alert(status + ": " + error);
+                    }
+                });
+            }
+
+            function processAnswer(answer) {
+                answer = answer.replace(/"/g, '').trim();
+                answer = answer.replace("<OUT>", "umm");
+                return answer;
+            }
+
+            $("#btnSay").click(function() {
+                say();
+            })
+            $("#txtQuestion").keypress(function(e) {
+                var keycode = (e.keyCode ? e.keyCode : e.which);
+                if (keycode == '13'){
+                    say();
+                }
+            })
+            $("#chkUseSpeechRec").change(function(){
+                startButton("txtQuestion", this.checked);
+            });
+        </script>
+
+        <script type="text/javascript">
+            var eventControl;
+            var recognition = new webkitSpeechRecognition();
+            var final_transcript = '';
+            var recognizing = false;
+            var ignore_onend;
+    
+            var first_char = /\S/;
+            function capitalize(s) {
+                return s.replace(first_char, function (m) { return m.toUpperCase(); });
+            }
+    
+            function startButton(control, state) {
+                if (recognizing && !state) {
+                    recognition.stop();
+                } else if (!recognizing && state) {
+                    eventControl = $("#" + control);
+                    recognition.lang = 'en-US';
+                    recognition.start();
+        
+                    ignore_onend = false;
+                }
+            }
+    
+            {
+                recognition.continuous = true; //Set to false if a pause is needed to stop recognition
+                recognition.interimResults = true;
+                recognition.onstart = function (event) {
+                    recognizing = true;
+                };
+    
+                recognition.onresult = function (event) {
+                    var interim_transcript = final_transcript.toString()
+                    for (var i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            final_transcript += event.results[i][0].transcript;
+                            final_transcript = capitalize(final_transcript);
+                            if (eventControl) {
+                                eventControl.val(final_transcript);
+                                final_transcript = '';
+                                say();
+                            }
+    
+                        } else {
+                            interim_transcript += event.results[i][0].transcript;
+                            if (eventControl) {
+                                eventControl.val(interim_transcript);
+                            }
+                        }
+                    }
+                };
+    
+                recognition.onerror = function (event) {
+                    if (event.error == 'no-speech') {
+                        ignore_onend = true;
+                    }
+                    if (event.error == 'audio-capture') {
+                        ignore_onend = true;
+                    }
+                    if (event.error == 'not-allowed') {
+                        ignore_onend = true;
+                    }
+                };
+    
+                recognition.onend = function (event) {
+                    recognizing = false;
+                    if (ignore_onend) {
+                        return;
+                    }
+                    if (!final_transcript) {
+                        return;
+                    }
+                };
+    
+            }
+    
+        </script>
+
+        <script type="text/javascript">
+            var synth = window.speechSynthesis;
+
+            function speak(txt) {
+                var utterance = new SpeechSynthesisUtterance(txt);
+                utterance.onstart = function(event) {
+                    var speechRec = $("#chkUseSpeechRec").is(":checked");
+                    if (speechRec) {
+                        console.info("stopping rec...");
+                        startButton("txtQuestion", false);
+                    }
+                }
+                utterance.onend = function(event) {
+                    var speechRec = $("#chkUseSpeechRec").is(":checked");
+                    if (speechRec) {
+                        console.info("starting rec...");
+                        startButton("txtQuestion", true);
+                    }
+                }
+
+                var voices = synth.getVoices();
+                utterance.voice = voices[4];
+
+                synth.speak(utterance);
+            }
+
+        </script>
+    </body>
+</html>

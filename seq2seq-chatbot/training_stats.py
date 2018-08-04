@@ -92,7 +92,7 @@ class TrainingStats(object):
         Args:
             filepath: path of the JSON file.
         """
-        with open(filepath, "r") as file:
+        with open(filepath) as file:
             json = file.read()
         training_stats = jsonpickle.decode(json)
         self.best_validation_metric_value = training_stats.best_validation_metric_value

@@ -60,7 +60,14 @@ class ChatbotModel(object):
         
         if self.model_hparams.share_embedding and self.model_hparams.encoder_embedding_size != self.model_hparams.decoder_embedding_size:
             raise ValueError("Cannot share embedding matrices when the encoder and decoder embedding sizes are different.")
-        
+
+        if self.input_vocabulary.external_embeddings is not None and self.input_vocabulary.external_embeddings.shape[1] != self.model_hparams.encoder_embedding_size:
+            raise ValueError("Cannot use external embeddings with vector size {0} for the encoder when the hparams encoder embedding size is {1}".format(self.input_vocabulary.external_embeddings.shape[1],
+                                                                                                                                                         self.model_hparams.encoder_embedding_size))
+        if self.output_vocabulary.external_embeddings is not None and self.output_vocabulary.external_embeddings.shape[1] != self.model_hparams.decoder_embedding_size:
+            raise ValueError("Cannot use external embeddings with vector size {0} for the decoder when the hparams decoder embedding size is {1}".format(self.output_vocabulary.external_embeddings.shape[1],
+                                                                                                                                                         self.model_hparams.decoder_embedding_size))
+                                                                                                                                            
         tf.contrib.learn.ModeKeys.validate(self.mode)
         
         if self.mode == tf.contrib.learn.ModeKeys.TRAIN or self.model_hparams.beam_width is None:
@@ -76,13 +83,23 @@ class ChatbotModel(object):
         self.input_sequence_length = tf.placeholder(tf.int32, [None], name = "input_sequence_length")
         
         #Build model
-       
+        initializer_feed_dict = {}
         if self.mode == tf.contrib.learn.ModeKeys.TRAIN:
             #Define training model inputs
             self.targets = tf.placeholder(tf.int32, [None, None], name = "targets")
             self.target_sequence_length = tf.placeholder(tf.int32, [None], name = "target_sequence_length")
             self.learning_rate = tf.placeholder(tf.float32, name= "learning_rate")
             self.keep_prob = tf.placeholder(tf.float32, name = "keep_prob")
+            if self.input_vocabulary.external_embeddings is not None:
+                self.input_external_embeddings = tf.placeholder(tf.float32, 
+                                shape = self.input_vocabulary.external_embeddings.shape, 
+                                name = "input_external_embeddings")
+                initializer_feed_dict[self.input_external_embeddings] = self.input_vocabulary.external_embeddings
+            if self.output_vocabulary.external_embeddings is not None and not self.model_hparams.share_embedding:
+                self.output_external_embeddings = tf.placeholder(tf.float32, 
+                                shape = self.output_vocabulary.external_embeddings.shape,
+                                name = "output_external_embeddings")
+                initializer_feed_dict[self.output_external_embeddings] = self.output_vocabulary.external_embeddings
             
             self.loss, self.training_step = self._build_model()
         
@@ -105,7 +122,7 @@ class ChatbotModel(object):
         
         self.summary_writer = tf.summary.FileWriter(self.model_dir, self.session.graph)
 
-        self.session.run(tf.global_variables_initializer())
+        self.session.run(tf.global_variables_initializer(), initializer_feed_dict)
         
         self.saver = tf.train.Saver()
     
@@ -296,7 +313,9 @@ class ChatbotModel(object):
             
         """
         #Process the question by cleaning it and converting it to an integer encoded vector
-        question = Vocabulary.clean_text(question)
+        if chat_settings.enable_auto_punctuation:
+            question = Vocabulary.auto_punctuate(question)
+        question = Vocabulary.clean_text(question, normalize_words = chat_settings.inference_hparams.normalize_words)
         question = self.input_vocabulary.words2ints(question)
         
         #Prepend the currently tracked steps of the conversation history separated by EOS tokens.
@@ -336,8 +355,11 @@ class ChatbotModel(object):
             answer_beams.append(predicted_answer)
         
         #Add new conversation steps to the end of the history and trim from the beginning if it is longer than conv_history_length
+        #Answers need to be converted from output_vocabulary ints to input_vocabulary ints (since they will be fed back in to the encoder)
         self.conversation_history.append(question)
-        self.conversation_history.append(answer_beams[0])
+        answer_for_history = self.output_vocabulary.ints2words(answer_beams[0], is_punct_discrete_word = True, capitalize_i = False)
+        answer_for_history = self.input_vocabulary.words2ints(answer_for_history)
+        self.conversation_history.append(answer_for_history)
         self.trim_conversation_history(chat_settings.inference_hparams.conv_history_length)
         
         #Convert the answer(s) to text and return
@@ -346,7 +368,7 @@ class ChatbotModel(object):
             answer = self.output_vocabulary.ints2words(answer_beams[i])
             answers.append(answer)
         
-        q_with_hist = None if not chat_settings.show_question_context else self.output_vocabulary.ints2words(question_with_history)
+        q_with_hist = None if not chat_settings.show_question_context else self.input_vocabulary.ints2words(question_with_history)
         if chat_settings.show_all_beams:
             return q_with_hist, answers
         else:
@@ -399,8 +421,16 @@ class ChatbotModel(object):
                 #   At training time, the dense embedding values that represent each word are updated in the direction of the loss gradient
                 #   just like normal weights. Thus the model learns the contextual relationships between the words (the embedding) along with
                 #   the objective function that depends on the words (the decoding).
-                encoder_embeddings_matrix = tf.Variable(tf.random_uniform([self.input_vocabulary.size(), self.model_hparams.encoder_embedding_size], 0, 1),
-                                                        name = "shared_embeddings_matrix" if self.model_hparams.share_embedding else "encoder_embeddings_matrix")
+                encoder_embeddings_matrix_name = "shared_embeddings_matrix" if self.model_hparams.share_embedding else "encoder_embeddings_matrix"
+                encoder_embeddings_matrix_shape = [self.input_vocabulary.size(), self.model_hparams.encoder_embedding_size]
+                encoder_embeddings_initial_value = (
+                                self.input_external_embeddings if self.input_vocabulary.external_embeddings is not None 
+                                else tf.random_uniform(encoder_embeddings_matrix_shape, 0, 1))
+                encoder_embeddings_matrix = tf.Variable(encoder_embeddings_initial_value,
+                                                        name = encoder_embeddings_matrix_name,
+                                                        trainable = self.model_hparams.encoder_embedding_trainable,
+                                                        expected_shape = encoder_embeddings_matrix_shape)
+                    
                 #As described above, the sequences of word vocabulary indexes in the inputs matrix are converted to sequences of 
                 #N-dimensional dense vectors, by "looking them up" by index in the encoder_embeddings_matrix.
                 encoder_embedded_input = tf.nn.embedding_lookup(encoder_embeddings_matrix, self.inputs)
@@ -417,8 +447,14 @@ class ChatbotModel(object):
                 if self.model_hparams.share_embedding:
                     decoder_embeddings_matrix = encoder_embeddings_matrix
                 else:
-                    decoder_embeddings_matrix = tf.Variable(tf.random_uniform([self.output_vocabulary.size(), self.model_hparams.decoder_embedding_size], 0, 1),
-                                                            name = "decoder_embeddings_matrix")
+                    decoder_embeddings_matrix_shape = [self.output_vocabulary.size(), self.model_hparams.decoder_embedding_size]
+                    decoder_embeddings_initial_value = (
+                                    self.output_external_embeddings if self.output_vocabulary.external_embeddings is not None 
+                                    else tf.random_uniform(decoder_embeddings_matrix_shape, 0, 1))
+                    decoder_embeddings_matrix = tf.Variable(decoder_embeddings_initial_value,
+                                                            name = "decoder_embeddings_matrix",
+                                                            trainable = self.model_hparams.decoder_embedding_trainable,
+                                                            expected_shape = decoder_embeddings_matrix_shape)
                 
                 #Create the attentional decoder cell
                 decoder_cell, decoder_initial_state = self._build_attention_decoder_cell(encoder_outputs, 
@@ -437,8 +473,8 @@ class ChatbotModel(object):
                 #Build the decoder RNN using the attentional decoder cell and output layer
                 if self.mode != tf.contrib.learn.ModeKeys.INFER:
                     #In train / validate mode, the training step and loss are returned. 
-                    loss, training_step = self._build_training_decoder(batch_size, 
-                                                                       decoder_embeddings_matrix, 
+                    loss, training_step = self._build_training_decoder(batch_size,
+                                                                       decoder_embeddings_matrix,
                                                                        decoder_cell, 
                                                                        decoder_initial_state, 
                                                                        decoder_scope, 
@@ -448,8 +484,8 @@ class ChatbotModel(object):
                     #In inference mode, the predictions and prediction sequence lengths are returned.
                     #The sequence lengths can differ, but the predictions matrix will be one fixed size.
                     #The predictions_seq_lengths array can be used to properly read the sequences of variable lengths.
-                    predictions, predictions_seq_lengths = self._build_inference_decoder(batch_size, 
-                                                                                         decoder_embeddings_matrix, 
+                    predictions, predictions_seq_lengths = self._build_inference_decoder(batch_size,
+                                                                                         decoder_embeddings_matrix,
                                                                                          decoder_cell, 
                                                                                          decoder_initial_state, 
                                                                                          decoder_scope, 
@@ -574,7 +610,7 @@ class ChatbotModel(object):
         Args:
             batch_size: the batch size tensor 
                 (defined at the beginning of the model graph as the length of the first dimension of the input matrix)
-            
+
             decoder_embeddings_matrix: The matrix containing the decoder embeddings
 
             decoder_cell: The RNN cell (or cells) used in the decoder.
@@ -607,14 +643,20 @@ class ChatbotModel(object):
         #Calculate the softmax loss. Since the logits tensor is fixed size and the output sequences are variable length,
         #we need to "mask" the timesteps beyond the sequence length for each sequence. This multiplies the loss calculated
         #for those extra timesteps by 0, cancelling them out so they do not affect the final sequence loss.
-        loss_mask = tf.sequence_mask(self.target_sequence_length, dtype=tf.float32)
+        loss_mask = tf.sequence_mask(self.target_sequence_length, tf.shape(self.targets)[1], dtype=tf.float32)
         loss = tf.contrib.seq2seq.sequence_loss(logits = logits,
                                                 targets = self.targets,
                                                 weights = loss_mask)
         tf.summary.scalar("sequence_loss", loss)
         
         #Set up the optimizer
-        optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
+        if self.model_hparams.optimizer == "sgd":
+            optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
+        elif self.model_hparams.optimizer == "adam":
+            optimizer = tf.train.AdamOptimizer(self.learning_rate)
+        else:
+            raise ValueError("Unsupported optimizer. Use 'sgd' for GradientDescentOptimizer or 'adam' for AdamOptimizer.")
+
         tf.summary.scalar("learning_rate", self.learning_rate)
         #If max_gradient_norm is provided, enable gradient clipping.
         #This prevents an exploding gradient from derailing the training by too much.
@@ -753,7 +795,7 @@ class ChatbotModel(object):
             session = tf.Session()
         
         return session
-    
+
     def _create_attention_images_summary(self, final_context_state):
         """Create attention image and attention summary.
         

@@ -4,43 +4,69 @@ Script for training the chatbot model
 import time
 import math
 from os import path
+from shutil import copytree
 
 import general_utils
-import dataset_reader_factory
+import train_console_helper
+from dataset_readers import dataset_reader_factory
+from vocabulary_importers import vocabulary_importer_factory
+from vocabulary import Vocabulary
 from chatbot_model import ChatbotModel
 from training_stats import TrainingStats
 
 #Read the hyperparameters and paths
-dataset_dir, model_dir, hparams, resume_checkpoint = general_utils.initialize_session("train")
+dataset_dir, model_dir, hparams, resume_checkpoint, encoder_embeddings_dir, decoder_embeddings_dir = general_utils.initialize_session("train")
 training_stats_filepath = path.join(model_dir, "training_stats.json")
 
-#Read the chatbot dataset
+#Read the chatbot dataset and generate / import the vocabulary
 dataset_reader = dataset_reader_factory.get_dataset_reader(dataset_dir)
 
 print()
-print ("Reading dataset '{0}'...".format(dataset_reader.dataset_name))
-dataset = dataset_reader.read_dataset(dataset_dir = dataset_dir, 
-                                      model_dir = model_dir, 
-                                      training_hparams = hparams.training_hparams, 
-                                      share_vocab = hparams.model_hparams.share_embedding)        
+print("Reading dataset '{0}'...".format(dataset_reader.dataset_name))
+dataset, dataset_read_stats = dataset_reader.read_dataset(dataset_dir = dataset_dir,
+                                                          model_dir = model_dir,
+                                                          training_hparams = hparams.training_hparams, 
+                                                          share_vocab = hparams.model_hparams.share_embedding,
+                                                          encoder_embeddings_dir = encoder_embeddings_dir,
+                                                          decoder_embeddings_dir = decoder_embeddings_dir)
+if encoder_embeddings_dir is not None:
+    print()
+    print("Imported {0} vocab '{1}'...".format("shared" if hparams.model_hparams.share_embedding else "input", encoder_embeddings_dir))
+    train_console_helper.write_vocabulary_import_stats(dataset_read_stats.input_vocabulary_import_stats)
+
+if decoder_embeddings_dir is not None and not hparams.model_hparams.share_embedding:
+    print()
+    print("Imported output vocab '{0}'...".format(decoder_embeddings_dir))
+    train_console_helper.write_vocabulary_import_stats(dataset_read_stats.output_vocabulary_import_stats)
+
+print()
+print("Final {0} vocab size: {1}".format("shared" if hparams.model_hparams.share_embedding else "input", dataset.input_vocabulary.size()))
+if not hparams.model_hparams.share_embedding:
+    print("Final output vocab size: {0}".format(dataset.output_vocabulary.size()))
 
 #Split the chatbot dataset into training & validation datasets        
-print ("Splitting {0} samples into training & validation sets ({1}% used for validation)..."
+print()
+print("Splitting {0} samples into training & validation sets ({1}% used for validation)..."
        .format(dataset.size(), hparams.training_hparams.validation_set_percent))
                  
 training_dataset, validation_dataset = dataset.train_val_split(val_percent = hparams.training_hparams.validation_set_percent,
                                                                random_split = hparams.training_hparams.random_train_val_split)
 training_dataset_size = training_dataset.size()
 validation_dataset_size = validation_dataset.size()
-print ("Training set: {0} samples. Validation set: {1} samples."
+print("Training set: {0} samples. Validation set: {1} samples."
        .format(training_dataset_size, validation_dataset_size))
 
-print ("Sorting training & validation sets to increase training efficiency...")
+print("Sorting training & validation sets to increase training efficiency...")
 training_dataset.sort()
 validation_dataset.sort()
 
+#Log the final training dataset if configured to do so
+if hparams.training_hparams.log_training_data:
+    training_data_log_filepath = path.join(model_dir, "training_data.txt")
+    training_dataset.save(training_data_log_filepath)
+
 #Create the model
-print ("Initializing model...")
+print("Initializing model...")
 print()
 with ChatbotModel(mode = "train",
                   model_hparams = hparams.model_hparams,
@@ -51,24 +77,28 @@ with ChatbotModel(mode = "train",
     print()
     
     #Restore from checkpoint if specified
+    best_train_checkpoint = "best_weights_training.ckpt"
+    best_val_checkpoint = "best_weights_validation.ckpt"
     training_stats = TrainingStats(hparams.training_hparams)
     if resume_checkpoint is not None:
-        print ("Resuming training from checkpoint {0}...".format(resume_checkpoint))
+        print("Resuming training from checkpoint {0}...".format(resume_checkpoint))
         model.load(resume_checkpoint)
         training_stats.load(training_stats_filepath)
     else:
-        print ("Initializing training...")
+        print("Creating checkpoint batch files...")
+        general_utils.create_batch_files(model_dir,
+                                        best_train_checkpoint if hparams.training_hparams.checkpoint_on_training else None,
+                                        best_val_checkpoint if hparams.training_hparams.checkpoint_on_validation else None,
+                                        encoder_embeddings_dir,
+                                        decoder_embeddings_dir)
 
-    if hparams.model_hparams.share_embedding:
-        print ("Shared Vocab size: {0}".format(dataset.input_vocabulary.size()))
-    else:
-        print ("Input Vocab size: {0}".format(dataset.input_vocabulary.size()))
-        print ("Output Vocab size: {0}".format(dataset.output_vocabulary.size()))
-    print ("Epochs: {0}".format(hparams.training_hparams.epochs))
-    print ("Batch Size: {0}".format(hparams.training_hparams.batch_size))
+        print("Initializing training...")
+
+    print("Epochs: {0}".format(hparams.training_hparams.epochs))
+    print("Batch Size: {0}".format(hparams.training_hparams.batch_size))
+    print("Optimizer: {0}".format(hparams.model_hparams.optimizer))
     
-    best_train_checkpoint = "best_weights_training.ckpt"
-    best_val_checkpoint = "best_weights_validation.ckpt"
+    backup_on_training_loss = sorted(hparams.training_hparams.backup_on_training_loss.copy(), reverse=True)
 
     #Train on all batches in epoch
     for epoch in range(1, hparams.training_hparams.epochs + 1):
@@ -135,7 +165,7 @@ with ChatbotModel(mode = "train",
             print('Learning rate decay: adjusting from {:>6.3f} to {:>6.3f}'.format(prev_learning_rate, learning_rate))
         
         #Checkpoint - training
-        if  training_stats.compare_training_loss(epoch_average_train_loss):
+        if training_stats.compare_training_loss(epoch_average_train_loss):
             if hparams.training_hparams.checkpoint_on_training:
                 model.save(best_train_checkpoint)
                 training_stats.save(training_stats_filepath)
@@ -152,7 +182,22 @@ with ChatbotModel(mode = "train",
                 if training_stats.early_stopping_check == hparams.training_hparams.early_stopping_epochs:
                     print("Early stopping checkpoint reached - validation loss has not improved in {0} epochs. Terminating training...".format(hparams.training_hparams.early_stopping_epochs))
                     break
-    
+
+        #Backup
+        do_backup = False
+        while len(backup_on_training_loss) > 0 and epoch_average_train_loss <= backup_on_training_loss[0]:
+            backup_on_training_loss.pop(0)
+            do_backup = True
+        if do_backup:
+            backup_dir = "{0}_backup_{1}".format(model_dir, "{:0.3f}".format(epoch_average_train_loss).replace(".", "_"))
+            copytree(model_dir, backup_dir)
+            general_utils.create_batch_files(backup_dir,
+                                            best_train_checkpoint if hparams.training_hparams.checkpoint_on_training else None,
+                                            best_val_checkpoint if hparams.training_hparams.checkpoint_on_validation else None,
+                                            encoder_embeddings_dir,
+                                            decoder_embeddings_dir)
+            print('Backup to {0} complete!'.format(backup_dir))
+
     #Training is complete... if no checkpointing was turned on, save the final model state
     if not hparams.training_hparams.checkpoint_on_training and not hparams.training_hparams.checkpoint_on_validation:
         model.save(best_train_checkpoint)

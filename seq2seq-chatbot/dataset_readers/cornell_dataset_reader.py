@@ -3,13 +3,13 @@ Reader class for the Cornell movie dialog dataset
 """
 from os import path
 
-from dataset_reader import DatasetReader
+from dataset_readers.dataset_reader import DatasetReader
 
-class CornellReader(DatasetReader):
+class CornellDatasetReader(DatasetReader):
     """Reader implementation for the Cornell movie dialog dataset
     """
     def __init__(self):
-        super(CornellReader, self).__init__("cornell_movie_dialog")
+        super(CornellDatasetReader, self).__init__("cornell_movie_dialog")
     
     def _get_dialog_lines_and_conversations(self, dataset_dir):
         """Get dialog lines and conversations. See base class for explanation.

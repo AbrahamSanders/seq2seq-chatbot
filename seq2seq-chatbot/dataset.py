@@ -4,6 +4,7 @@ Dataset class
 import math
 import random
 import numpy as np
+from os import path
 
 class Dataset(object):
     """Class representing a chatbot dataset with questions, answers, and vocabulary.
@@ -99,6 +100,27 @@ class Dataset(object):
         if self.size() > 0:
             self.questions_into_int, self.answers_into_int = zip(*sorted(zip(self.questions_into_int, self.answers_into_int), 
                                                                          key = lambda qa_pair: len(qa_pair[0])))
+
+    def save(self, filepath):
+        """Saves the dataset questions & answers exactly as represented by input_vocabulary and output_vocabulary.
+        """
+        filename, ext = path.splitext(filepath)
+        questions_filepath = "{0}_questions{1}".format(filename, ext)
+        answers_filepath = "{0}_answers{1}".format(filename, ext)
+
+        with open(questions_filepath, mode="w", encoding="utf-8") as file:
+            for question_into_int in self.questions_into_int:
+                question = self.input_vocabulary.ints2words(question_into_int, is_punct_discrete_word = True, capitalize_i = False)
+                file.write(question)
+                file.write('\n')
+
+        with open(answers_filepath, mode="w", encoding="utf-8") as file:
+            for answer_into_int in self.answers_into_int:
+                answer = self.output_vocabulary.ints2words(answer_into_int, is_punct_discrete_word = True, capitalize_i = False)
+                file.write(answer)
+                file.write('\n')
+
+
     
     def batches(self, batch_size):
         """Provide the dataset as an enumerable collection of batches of size batch_size.

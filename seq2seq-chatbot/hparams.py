@@ -3,6 +3,7 @@ Hyperparameters class
 """
 
 import jsonpickle
+from vocabulary_importers.vocabulary_importer import VocabularyImportMode
 
 class Hparams(object):
     """Container for model, training, and inference hyperparameters.
@@ -31,6 +32,8 @@ class Hparams(object):
         with open(filepath, "r") as file:
             json = file.read()
         hparams = jsonpickle.decode(json)
+        hparams.training_hparams.input_vocab_import_mode = VocabularyImportMode[hparams.training_hparams.input_vocab_import_mode]
+        hparams.training_hparams.output_vocab_import_mode = VocabularyImportMode[hparams.training_hparams.output_vocab_import_mode]
         return hparams
 
 
@@ -64,13 +67,25 @@ class ModelHparams(object):
         
         decoder_embedding_size: the number of dimensions for each vector in the decoder embedding matrix.
             This matrix will be shaped (output_vocabulary.size(), decoder_embedding_size)
+
+        encoder_embedding_trainable: True to allow gradient updates to be applied to the encoder embedding matrix.
+            False to freeze the embedding matrix and only train the encoder & decoder RNNs, enabling greater training
+            efficiency when loading pre-trained embeddings such as Word2Vec.
+
+        decoder_embedding_trainable: True to allow gradient updates to be applied to the decoder embedding matrix.
+            False to freeze the embedding matrix and only train the encoder & decoder RNNs, enabling greater training
+            efficiency when loading pre-trained embeddings such as Word2Vec.
         
         share_embedding: True to reuse the same embedding matrix for the encoder and decoder.
             If the vocabulary is identical between input questions and output answers (as in a chatbot), then this should be True.
             If the vocabulary is different between input questions and output answers (as in a domain-specific Q&A system), then this should be False.
-            If True - input_vocabulary.size() & output_vocabulary.size() must have the same value, 
-            and encoder_embedding_size & decoder_embedding_size must also have the same value. 
-            If both conditions are not met, an error is raised.
+            If True - 
+                1) input_vocabulary.size() & output_vocabulary.size() must have the same value
+                2) encoder_embedding_size & decoder_embedding_size must have the same value
+                3) encoder_embedding_trainable & decoder_embedding_trainable must have the same value
+                4) If loading pre-trained embeddings, --encoderembeddingsdir & --decoderembeddingsdir args 
+                    must be supplied with the same value (or --embeddingsdir can be used instead)
+            If all of the above conditions are not met, an error is raised.
         
         attention_type: Type of attention mechanism to use. 
             ("bahdanau", "normed_bahdanau", "luong", "scaled_luong")
@@ -83,6 +98,11 @@ class ModelHparams(object):
         
         enable_sampling: If True while beam_width = 0, the sampling decoder is used instead of the greedy decoder. 
         
+        optimizer: Type of optimizer to use when training.
+            ("sgd", "adam")
+            NOTE: this parameter should ideally be in TrainingHparams instead of ModelHparams, but is here for now
+                because the graph of the model physically changes based on which optimizer is used.
+
         max_gradient_norm: max value to clip the gradients if gradient clipping is enabled.
             Set to 0 to disable gradient clipping. Defaults to 5.
             This value is ignored if mode is "infer".
@@ -109,6 +129,10 @@ class ModelHparams(object):
         self.encoder_embedding_size = 256
         
         self.decoder_embedding_size = 256
+
+        self.encoder_embedding_trainable = True
+
+        self.decoder_embedding_trainable = True
         
         self.share_embedding = True
         
@@ -117,6 +141,8 @@ class ModelHparams(object):
         self.beam_width = 10
         
         self.enable_sampling = False
+
+        self.optimizer = "adam"
         
         self.max_gradient_norm = 5.
         
@@ -145,6 +171,9 @@ class TrainingHparams(object):
             conversation in order to determine the best way to respond.
             pick a lower limit if training is too slow or causes out of memory errors. The higher this number,
             the more timesteps the encoder RNN will need to be unrolled.
+
+        normalize_words: True to preprocess the words in the training dataset by replacing word contractions 
+            with their full forms (e.g. i'm -> i am) and then stripping out any remaining apostrophes.
         
         input_vocab_threshold: the minimum number of times a word must appear in the questions in order to be included
             in the vocabulary embedding. Any words that are not included in the vocabulary
@@ -152,9 +181,27 @@ class TrainingHparams(object):
             if model_params.share_embedding = True, this must equal output_vocab_threshold.
 
         output_vocab_threshold: the minimum number of times a word must appear in the answers in order to be included
-            in the vocabulary embedding. Any words that are not included in the vocabulary
-            get replaced with an <OUT> token before training and inference.
+            For more info see input_vocab_threshold.
             if model_params.share_embedding = True, this must equal input_vocab_threshold.
+
+        input_vocab_import_normalized: True to normalize external word vocabularies and embeddings before import as input vocabulary.
+            In this context normalization means convert all word tokens to lower case and then average the embedding vectors for any duplicate words.
+            For example, "JOHN", "John", and "john" will be converted to "john" and it will take the mean of all three embedding vectors.
+
+        output_vocab_import_normalized: True to normalize external word vocabularies and embeddings before import as output vocabulary.
+            For more info see input_vocab_import_normalized.
+
+        input_vocab_import_mode: Mode to govern how external vocabularies and embeddings are imported as input vocabulary.
+            Ignored if no external vocabulary specified.
+            See VocabularyImportMode.
+
+        output_vocab_import_mode: Mode to govern how external vocabularies and embeddings are imported as output vocabulary.
+            Ignored if no external vocabulary specified.
+            See VocabularyImportMode.
+            This should be set to 'Dataset' or 'ExternalIntersectDataset' for large vocabularies, since the size of the
+                decoder output layer is the vocabulary size. For example, an external embedding may have a vocabulary size 
+                of 1 million, but only 30k words appear in the dataset and having an output layer of 30k dimensions is 
+                much more efficient than an output layer of 1m dimensions.
         
         validation_set_percent: the percentage of the training dataset to use as the validation set.
         
@@ -192,7 +239,15 @@ class TrainingHparams(object):
         
         log_summary: True to log training stats & graph for visualization in tensorboard.
 
+        log_cleaned_dataset: True to save a copy of the cleaned dataset to disk for debugging purposes before training begins.
+
+        log_training_data: True to save a copy of the training question-answer pairs as represented by their vocabularies to disk.
+            this is useful to see how frequently words are replaced by <OUT> and also how dialog context is prepended to questions.
+
         stats_after_n_batches: Output training statistics (loss, time, etc.) after every N batches.
+
+        backup_on_training_loss: List of training loss values upon which to backup the model
+            Backups are full copies of the latest checkpoint files to another directory, also including vocab and hparam files.
     """
     def __init__(self):
         """Initializes the TrainingHparams instance.
@@ -204,10 +259,20 @@ class TrainingHparams(object):
         self.max_conversations = -1
         
         self.conv_history_length = 6
+
+        self.normalize_words = True
         
         self.input_vocab_threshold = 2
 
         self.output_vocab_threshold = 2
+
+        self.input_vocab_import_normalized = True
+
+        self.output_vocab_import_normalized = True
+
+        self.input_vocab_import_mode = VocabularyImportMode.External
+
+        self.output_vocab_import_mode = VocabularyImportMode.Dataset
         
         self.validation_set_percent = 0
         
@@ -235,7 +300,13 @@ class TrainingHparams(object):
         
         self.log_summary = True
 
+        self.log_cleaned_dataset = True
+
+        self.log_training_data = True
+
         self.stats_after_n_batches = 100
+
+        self.backup_on_training_loss = []
         
 class InferenceHparams(object):
     """Hyperparameters used when chatting with the chatbot model (a.k.a prediction or inference).
@@ -251,6 +322,9 @@ class InferenceHparams(object):
         
         conv_history_length: number of conversation steps to prepend every question.
             This can be different from the value used during training.
+
+        normalize_words: True to preprocess the words in the input question by replacing word contractions 
+            with their full forms (e.g. i'm -> i am) and then stripping out any remaining apostrophes.
         
         log_summary: True to log attention alignment images and inference graph for visualization in tensorboard.
 
@@ -266,6 +340,8 @@ class InferenceHparams(object):
         self.max_answer_words = 100
         
         self.conv_history_length = 6
+
+        self.normalize_words = True
         
         self.log_summary = True
 
