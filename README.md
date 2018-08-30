@@ -1,6 +1,8 @@
 # seq2seq-chatbot
 A sequence2sequence chatbot implementation with TensorFlow.
 
+See instructions to get started below, or check out some [chat logs](seq2seq-chatbot/models/cornell_movie_dialog/trained_model_v2/chat_logs)
+
 ## Chatting with a trained model
 ### To chat with a trained model from the model directory:
 
