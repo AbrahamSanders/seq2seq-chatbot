@@ -1,0 +1,36 @@
+You: hello
+ChatBot: how are you?
+
+You: im good
+ChatBot: is there anything?
+
+You: yes
+ChatBot: maybe who knows you?
+
+You: i dont know
+ChatBot: is that a fact?
+
+You: it should be
+ChatBot: is that so?
+
+You: you are funny
+ChatBot: do you want me to marry you?
+
+You: offcourse not
+ChatBot: do you mind.?
+
+You: yes I do
+ChatBot: you're alright.
+
+You: okay
+ChatBot: let's be different.
+
+You: what do you want to do
+ChatBot: actually. I promise. I want to see you as much as I can.
+
+You: same here
+ChatBot: where are you?
+
+You: at home
+ChatBot: then?
+
