@@ -11,9 +11,7 @@ For bugs and other issues see the repository issues on GitHub.
 ## Model Improvements
 - Support more RNN types such as GRUs and other LSTM variants. One of particular interest is [Nested LSTM](https://arxiv.org/abs/1801.10308).
 
-- Support sentence embeddings such as [sent2vec](https://arxiv.org/abs/1703.02507).
-
-- Support transfer learning for entire pre-trained language models. [https://thegradient.pub/nlp-imagenet/](https://thegradient.pub/nlp-imagenet/) 
+- Use [BERT](https://github.com/google-research/bert) in place of the encoder (and possibly in place of the RNN component of the decoder if that makes sense).
 
 - Use [HRED](https://arxiv.org/abs/1507.02221) for dialog context tracking instead of the current pre-pending technique. 
 
