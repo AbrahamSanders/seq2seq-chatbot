@@ -120,8 +120,9 @@ The following python packages are used in seq2seq-chatbot:
     pip install --upgrade jsonpickle
     ```
 
-- [flask 0.12.4](http://flask.pocoo.org/) and [flask-restful](https://flask-restful.readthedocs.io/en/latest/) (required to run the web interface)
+- [click 6.7](https://palletsprojects.com/p/click/), [flask 0.12.4](http://flask.pocoo.org/) and [flask-restful](https://flask-restful.readthedocs.io/en/latest/) (required to run the web interface)
     ```shell
+    pip install click==6.7
     pip install flask==0.12.4
     pip install --upgrade flask-restful
     ```
