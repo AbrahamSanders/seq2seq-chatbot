@@ -9,7 +9,7 @@ See instructions to get started below, or check out some [chat logs](seq2seq-cha
 (Batch files are only available for windows as of now. For mac and linux users see instructions below for python console.)
 
 For console chat: 
-1. Run `chat_console_best_weights_training.bat` or `chat_console_best_weights_validation.bat`
+1. Run `chat_console_best_weights_training.bat` or `chat_console_best_weights_validation.bat` (Download and unzip [trained_model_v2](seq2seq-chatbot/models/cornell_movie_dialog/README.md) into the [seq2seq-chatbot/models/cornell_movie_dialog](seq2seq-chatbot/models/cornell_movie_dialog) folder for the bat files)
 
 For web chat:
 1. Run `chat_web_best_weights_training.bat` or `chat_web_best_weights_validation.bat`
