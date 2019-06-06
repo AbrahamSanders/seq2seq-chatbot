@@ -8,13 +8,17 @@ See instructions to get started below, or check out some [chat logs](seq2seq-cha
 
 (Batch files are only available for windows as of now. For mac and linux users see instructions below for python console.)
 
-For console chat: 
-1. Run `chat_console_best_weights_training.bat` or `chat_console_best_weights_validation.bat` (Download and unzip [trained_model_v2](seq2seq-chatbot/models/cornell_movie_dialog/README.md) into the [seq2seq-chatbot/models/cornell_movie_dialog](seq2seq-chatbot/models/cornell_movie_dialog) folder for the bat files)
+1. Make sure a model exists in the models directory (to get started, download and unzip [trained_model_v2](seq2seq-chatbot/models/cornell_movie_dialog/README.md) into the [seq2seq-chatbot/models/cornell_movie_dialog](seq2seq-chatbot/models/cornell_movie_dialog) folder)
+
+For console chat:
+
+2. From the model directory run `chat_console_best_weights_training.bat` or `chat_console_best_weights_validation.bat`
 
 For web chat:
-1. Run `chat_web_best_weights_training.bat` or `chat_web_best_weights_validation.bat`
 
-2. Open a browser to the URL indicated by the server console, followed by `/chat_ui.html`. This is typically: [http://localhost:8080/chat_ui.html](http://localhost:8080/chat_ui.html)
+2. From the model directory run `chat_web_best_weights_training.bat` or `chat_web_best_weights_validation.bat`
+
+3. Open a browser to the URL indicated by the server console, followed by `/chat_ui.html`. This is typically: [http://localhost:8080/chat_ui.html](http://localhost:8080/chat_ui.html)
 
 ### To chat with a trained model from a python console:
 
