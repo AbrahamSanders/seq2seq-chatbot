@@ -110,13 +110,13 @@ Instructions coming soon...
 The following python packages are used in seq2seq-chatbot:
 (excluding packages that come with Anaconda)
 
-- [TensorFlow](https://www.tensorflow.org/)
+- [TensorFlow](https://www.tensorflow.org/) *Note - TF 2.x is not yet supported, use the latest TF 1.x version.
     ```shell
-    pip install --upgrade tensorflow
+    pip install --upgrade tensorflow==1.*
     ```
     For GPU support: [(See here for full GPU install instructions including CUDA and cuDNN)](https://www.tensorflow.org/install/)
     ```shell
-    pip install --upgrade tensorflow-gpu
+    pip install --upgrade tensorflow-gpu==1.*
     ```
 
 - [jsonpickle](https://jsonpickle.github.io/)
