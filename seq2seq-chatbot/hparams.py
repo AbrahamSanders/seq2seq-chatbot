@@ -29,7 +29,7 @@ class Hparams(object):
         Args:
             filepath: path of the JSON file.
         """
-        with open(filepath, "r") as file:
+        with open(filepath, "r", encoding="utf-8") as file:
             json = file.read()
         hparams = jsonpickle.decode(json)
         hparams.training_hparams.input_vocab_import_mode = VocabularyImportMode[hparams.training_hparams.input_vocab_import_mode]
